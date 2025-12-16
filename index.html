@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>יומן מעקב לחץ דם שבועי</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
+
+        :root {
+            --primary-color: #2c7a7b; /* Teal medical color */
+            --secondary-color: #e6fffa;
+            --border-color: #cbd5e0;
+            --text-color: #2d3748;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #f7fafc;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* A4 Paper Simulation */
+        .page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm; /* Print margins */
+            box-sizing: border-box;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* Header Section */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .patient-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .input-line {
+            border: none;
+            border-bottom: 1px dashed #a0aec0;
+            width: 150px;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 2px 5px;
+            outline: none;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            table-layout: fixed; /* Fixed layout for better column control */
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-weight: 500;
+            border: 1px solid var(--primary-color);
+            font-size: 12px;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            padding: 0;
+            height: 32px;
+            vertical-align: middle;
+        }
+
+        /* Column Widths - Adjusted to give more space to notes */
+        .col-day { width: 10%; }
+        .col-time { width: 8%; }
+        .col-bp { width: 15%; }
+        .col-food { width: 12%; }
+        .col-coffee { width: 10%; }
+        .col-notes { width: auto; } /* Will take up remaining space (approx 45%) */
+
+        /* Day Merging Logic Styling */
+        .day-cell {
+            background-color: #f0fff4;
+            font-weight: 700;
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color) !important; 
+        }
+
+        .time-cell {
+            text-align: center;
+            background-color: #fafafa;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        /* Input fields inside table */
+        td input[type="text"] {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-family: 'Rubik', sans-serif;
+            background: transparent;
+            font-size: 13px;
+        }
+
+        td input[type="text"]:focus {
+            background-color: #ebf8ff;
+        }
+
+        /* Custom Checkbox Styling for V/X */
+        .coffee-checkbox-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            gap: 8px; /* Space between Yes and No groups */
+        }
+
+        .coffee-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .coffee-label input[type="checkbox"] {
+            display: none; /* Hide default checkbox */
+        }
+
+        .checkmark {
+            width: 14px;
+            height: 14px;
+            border: 1px solid #cbd5e0;
+            border-radius: 3px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 4px; /* Space between box and text */
+            font-weight: bold;
+            color: transparent;
+            transition: all 0.2s;
+            font-size: 12px;
+            background-color: #fff;
+        }
+        
+        .label-text {
+            line-height: 1;
+            padding-top: 2px;
+        }
+
+        /* Style for "With Coffee" (V) */
+        .coffee-label.with input:checked + .checkmark {
+            background-color: #2c7a7b;
+            border-color: #2c7a7b;
+            color: white;
+        }
+        .coffee-label.with input:checked + .checkmark::before {
+            content: '✓';
+        }
+
+        /* Style for "Without Coffee" (X) */
+        .coffee-label.without input:checked + .checkmark {
+            background-color: #e53e3e;
+            border-color: #e53e3e;
+            color: white;
+        }
+        .coffee-label.without input:checked + .checkmark::before {
+            content: '✕';
+        }
+
+        /* Thicker border between days */
+        tr.day-end td {
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        /* Footer Instructions */
+        .footer-notes {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #4a5568;
+            background-color: #edf2f7;
+            padding: 10px;
+            border-radius: 8px;
+            border-right: 4px solid var(--primary-color);
+        }
+
+        /* Action Buttons (Hidden on Print) */
+        .actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .actions-hint {
+            font-size: 12px; 
+            color: #718096;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Rubik', sans-serif;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #235c5d;
+        }
+
+        button.clear {
+            background-color: #e53e3e;
+        }
+
+        /* Print Optimizations */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .page {
+                box-shadow: none;
+                width: 100%;
+                height: auto;
+                padding: 0;
+                border: none;
+            }
+            .actions {
+                display: none;
+            }
+            th {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .day-cell {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .footer-notes {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            input {
+                border: none;
+            }
+             /* Adjust placeholder color for print if needed, usually browsers hide them or show gray */
+             .checkmark {
+                 -webkit-print-color-adjust: exact;
+                 print-color-adjust: exact;
+             }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="actions">
+        <button onclick="printPage()">🖨️ הדפס דף / שמור כ-PDF</button>
+        <button class="clear" onclick="clearForm()">🗑️ נקה טופס</button>
+        <span class="actions-hint">(אם הכפתור לא עובד, לחצו Ctrl+P)</span>
+    </div>
+
+    <div class="page">
+        <header>
+            <h1>יומן מעקב לחץ דם שבועי</h1>
+            <div class="subtitle">מעקב רפואי מסודר - בוקר, צהריים וערב</div>
+        </header>
+
+        <!-- Removed patient name field, kept only dates centered -->
+        <div class="patient-info" style="justify-content: center;">
+            <div>
+                <strong>תאריכים:</strong>
+                <input type="text" class="input-line" style="width: 100px;" placeholder="--/--">
+                <strong>עד</strong>
+                <input type="text" class="input-line" style="width: 100px;" placeholder="--/--">
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-day">יום</th>
+                    <th class="col-time">זמן</th>
+                    <th class="col-bp">לחץ דם (SYS/DIA)</th>
+                    <th class="col-food">אוכל (לפני/אחרי)</th>
+                    <th class="col-coffee">דופק</th>
+                    <th class="col-notes">הערות / תסמינים</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Rows generated by JS -->
+            </tbody>
+        </table>
+
+        <div class="footer-notes">
+            <strong>💡 הנחיות למדידה נכונה:</strong>
+            <ul>
+                <li>יש לשבת במנוחה כ-5 דקות לפני המדידה, רגליים על הרצפה.</li>
+                <li><strong>אוכל:</strong> מומלץ לציין כמה זמן עבר מהארוחה האחרונה.</li>
+                <li><strong>דופק:</strong> רצוי למדוד את הדופק יחד עם לחץ הדם (מכשירים רבים מודדים אוטומטית).</li>
+                <li>בדיקות חשובות: בוקר (לפני תרופות) וערב.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+        const times = ['בוקר ☀️', 'צהריים 🌤️', 'ערב 🌙'];
+        const tbody = document.getElementById('table-body');
+
+        days.forEach((day, dayIndex) => {
+            times.forEach((time, timeIndex) => {
+                const tr = document.createElement('tr');
+                
+                if (timeIndex === 2) {
+                    tr.classList.add('day-end');
+                }
+
+                // Day Column
+                if (timeIndex === 0) {
+                    const tdDay = document.createElement('td');
+                    tdDay.rowSpan = 3;
+                    tdDay.textContent = 'יום ' + day;
+                    tdDay.className = 'day-cell';
+                    tr.appendChild(tdDay);
+                }
+
+                // Time Column
+                const tdTime = document.createElement('td');
+                tdTime.textContent = time;
+                tdTime.className = 'time-cell';
+                tr.appendChild(tdTime);
+
+                // BP Column - Added "/" back to placeholder
+                const tdBP = document.createElement('td');
+                tdBP.innerHTML = '<input type="text" placeholder="/">';
+                tr.appendChild(tdBP);
+
+                // Food Column
+                const tdFood = document.createElement('td');
+                tdFood.innerHTML = '<input type="text" placeholder="לפני/אחרי">';
+                tr.appendChild(tdFood);
+
+                // Pulse Column
+                const tdCoffee = document.createElement('td');
+                tdCoffee.innerHTML = '<input type="text" placeholder="">';
+                tr.appendChild(tdCoffee);
+
+                // Notes Column
+                const tdNotes = document.createElement('td');
+                tdNotes.innerHTML = '<input type="text" placeholder="">';
+                tdNotes.style.textAlign = 'right';
+                tdNotes.style.paddingRight = '5px';
+                tr.appendChild(tdNotes);
+
+                tbody.appendChild(tr);
+            });
+        });
+
+        function printPage() {
+            try {
+                window.focus();
+                window.print();
+            } catch (e) {
+                console.error("Print failed", e);
+                alert("נראה שיש בעיה בפתיחת חלונית ההדפסה. נסו ללחוץ על Ctrl+P במקלדת.");
+            }
+        }
+
+        function clearForm() {
+            const textInputs = document.querySelectorAll('input[type="text"]');
+            textInputs.forEach(input => input.value = '');
+            
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+    </script>
+</body>
+</html>
